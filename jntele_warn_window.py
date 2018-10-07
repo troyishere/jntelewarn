@@ -6,7 +6,9 @@ Created on Sat Sep  1 23:08:58 2018
 """
 
 from jntele_warn_operate import LteWarn
-
+#########################################################
+from jntele_warn_style import SheetStyle
+#########################################################
 from tkinter import *
 import tkinter.messagebox
 import tkinter.scrolledtext
@@ -26,16 +28,15 @@ class App:
         self.initUI()#初始化UI
         self.setUICenter()#居中UI
         self._loadFileInfo()#加载文件信息
-        self.operate = LteWarn(self)#处理函数
-        
-     
+        # self.operate = LteWarn(self)#数据处理函数
+        # self.style = SheetStyle(self)#格式处理函数
     def run(self):#启动界面
         self.root.mainloop()
         
     def initUI(self):#初始化UI
         ''''''
         self.root.title("济南电信基站故障处理")
-        self.root.resizable(width=False, height=False) #宽不可变, 高可变,默认为True
+        # self.root.resizable(width=False, height=False) #宽不可变, 高可变,默认为True
         self.root.iconbitmap('logo.ico')
         self.root.protocol("WM_DELETE_WINDOW", self.onClosing)#绑定关闭处理函数
         
@@ -70,7 +71,7 @@ class App:
         lfm_md = LabelFrame(self.root, text='基础数据')
         fm_md1 = Frame(lfm_md)
         Label(fm_md1,text='诺基亚小区文件： ').pack(side=TOP,anchor=W,pady=4)#,fill=Y)
-#        Label(fm_md1,text='诺基亚BBU文件： ').pack(side=TOP,anchor=W,pady=4)#,fill=Y)
+    #    Label(fm_md1,text='诺基亚BBU文件： ').pack(side=TOP,anchor=W,pady=4)#,fill=Y)
         Label(fm_md1,text='基站负责文件：').pack(side=TOP,anchor=W,pady=4)#,fill=Y)
         fm_md1.pack(side=LEFT)
         fm_md2 = Frame(lfm_md)
@@ -93,19 +94,44 @@ class App:
         self.button_bbuinfo.bind("<ButtonRelease-1>",self.button_bbuinfo_event)
         fm_md3.pack(side=LEFT)
         lfm_md.pack(side=TOP,fill=NONE,pady=2,padx = 2)
+        #########################################################
+        '''模块二点五，加载告警文件'''
+        lfm_md2 = LabelFrame(self.root, text='告警文件')
+        fm_md21 = Frame(lfm_md2)
+        Label(fm_md21,text='告警文件：          ').pack(side=TOP,anchor=W,pady=4)#,fill=Y)
+        fm_md21.pack(side=LEFT)
+        fm_md22 = Frame(lfm_md2)
+        self.text_warn = Entry(fm_md22,width=30)
+        self.text_warn.pack(side=TOP,anchor=W,fill=Y,pady=4,padx = 2)
+        fm_md22.pack(side=LEFT)
+        fm_md23 = Frame(lfm_md2)
+        self.button_warn = Button(fm_md23,text='加载',width=5)
+        self.button_warn.pack()#side=TOP,anchor=W,fill=Y)
+        self.button_warn.bind("<ButtonRelease-1>",self.button_warn_event)
+        fm_md23.pack(side=LEFT)
+        lfm_md2.pack(side=TOP,fill=NONE,pady=2,padx = 2)
+        #########################################################
+        
         '''模块三，加载处理按钮'''
         fm_exe = Frame(self.root)
-        Label(fm_exe,width=28).pack(side=LEFT)
-        self.button_exe = Button(fm_exe,text='处理并保存')
+        Label(fm_exe,width=20).pack(side=LEFT)
+        self.button_exe = Button(fm_exe,text=' 处理 ')
         self.button_exe.pack(side=LEFT)
         #self.button_exe.config(state=DISABLED)
         self.button_exe.bind("<ButtonRelease-1>",self.button_exe_event)
-        
-        self.check_var = IntVar()
-        check = Checkbutton(fm_exe, text = "显示告警", variable = self.check_var,
+
+        self.check_match = IntVar()
+        checkMatch = Checkbutton(fm_exe, text = "匹配告警", variable = self.check_match,
                  onvalue = 1, offvalue = 0)
-        check.select()
-        check.pack(side=RIGHT)#,anchor=E)
+        checkMatch.select()
+        checkMatch.pack(side=RIGHT)#,anchor=E)
+        
+        self.check_save = IntVar()
+        checkSave = Checkbutton(fm_exe, text = "保存告警", variable = self.check_save,
+                 onvalue = 1, offvalue = 0)
+        checkSave.select()
+        checkSave.pack(side=RIGHT)#,anchor=E)
+
         fm_exe.pack()
         
 #        self.button_match = Button(self.root,text='匹配故障表')
@@ -125,7 +151,7 @@ class App:
 
         #time.sleep(0.1)
         w = 380#self.root.winfo_width()#
-        h = 400#self.root.winfo_height()#
+        h = 460#self.root.winfo_height()#
         ws = self.root.winfo_screenwidth()
         hs = self.root.winfo_screenheight()
         x = (ws/2) - (w/2)
@@ -145,7 +171,8 @@ class App:
 #        self._getFileName(self.text_nkbbu)
     def button_bbuinfo_event(self,event):
         self._getFileName(self.text_bbuinfo)
-    
+    def button_warn_event(self,event):
+        self._getFileName(self.text_warn)
     # 处理按钮程序
     def button_exe_event(self,event):
         '''处理告警信息'''
@@ -160,21 +187,26 @@ class App:
           
     def onClosing(self):# 退出时处理数据  
         self._saveFileInfo()
-        self.root.destroy() 
+        self.root.destroy()
+        
         
     def _loadFileInfo(self):# 加载文件数据
         filename = 'filedata.csv'
         if not os.path.exists(filename):
             return
-        df = pd.read_csv(filename)#,engine='python')
-        df = df.fillna('')
-        self.text_hw.insert(0,df.loc[0,'INFO'])
-        self.text_nk1.insert(0,df.loc[1,'INFO'])
-        self.text_nk2.insert(0,df.loc[2,'INFO'])
-        self.text_nkcell.insert(0,df.loc[3,'INFO'])
-#        self.text_nkbbu.insert(0,df.loc[4,'INFO'])
-        self.text_bbuinfo.insert(0,df.loc[4,'INFO'])
-        
+        try:
+            df = pd.read_csv(filename)#,engine='python')
+            df = df.fillna('')
+            self.text_hw.insert(0,df.loc[0,'INFO'])
+            self.text_nk1.insert(0,df.loc[1,'INFO'])
+            self.text_nk2.insert(0,df.loc[2,'INFO'])
+            self.text_nkcell.insert(0,df.loc[3,'INFO'])
+    #        self.text_nkbbu.insert(0,df.loc[4,'INFO'])
+            self.text_bbuinfo.insert(0,df.loc[4,'INFO'])
+            self.text_warn.insert(0,df.loc[5,'INFO'])
+        except Exception as e:
+            self.showError("异常信息",e)
+            
     def _saveFileInfo(self):# 保存加载文件
         df = DataFrame(columns = ['INFO'])
         df.loc[0] = self.text_hw.get()
@@ -183,6 +215,7 @@ class App:
         df.loc[3] = self.text_nkcell.get()
 #        df.loc[4] = self.text_nkbbu.get()
         df.loc[4] = self.text_bbuinfo.get()
+        df.loc[5] = self.text_warn.get()
         df.to_csv('filedata.csv',header=True,index=True) 
         
     def _getFileName(self,entry):# 获取文件名称并格式
@@ -248,22 +281,46 @@ class App:
             file_bbuinfo = self.text_bbuinfo.get()
             if not self._isFileExist(file_bbuinfo,'基站分区负责文件'):
                 return
-            
-            status = self.operate.getWarnInfo(file_hw,
+            if self.check_match.get() == 1:
+                file_warn_base = self.text_warn.get()
+                if not self._isFileExist(file_warn_base,'告警文件'):
+                    return
+            '''生成告警信息'''
+            operate = LteWarn(self)
+            style = SheetStyle(self)
+            status = operate.getWarnInfo(file_hw,
                                             file_nkcell,file_nk1,file_nk2,
                                             file_bbuinfo)
             if not status:
                 return
-            fname=tkinter.filedialog.asksaveasfilename(initialfile='故障'+ LteWarn.getTimeStr() + '.xlsx',
-                                                       filetypes=[("Excel文件",".xlsx")])
-            if len(fname) == 0:
-               self.printInfo('告警信息未保存')
-            else:
-                if not '.xlsx' in fname:
-                    fname = fname + '.xlsx'
-                self.operate.saveWarnInfo(fname)
-                self.printInfo('告警信息已保存到：' + fname)
-                if self.check_var.get() == 1:
+
+            '''判断是否保存'''
+            if self.check_save.get() == 1:
+                fname=tkinter.filedialog.asksaveasfilename(initialfile='故障'+ LteWarn.getTimeStr() + '.xlsx',
+                                                            filetypes=[("Excel文件",".xlsx")])
+                if len(fname) == 0:
+                    self.printInfo('告警信息未保存')
+                    return
+                else:
+                    if not '.xlsx' in fname:
+                        fname = fname + '.xlsx'
+                    operate.saveWarnInfo(fname)
+                    self.printInfo('告警信息已保存到：' + fname)
+                    os.popen(fname)
+            '''判断是否匹配告警文件'''
+            if self.check_match.get() == 1:
+                operate.matchWarnBase(file_warn_base)
+                fname=tkinter.filedialog.asksaveasfilename(initialfile='故障汇总'+ LteWarn.getTimeStr() + '.xlsx',
+                                                           filetypes=[("Excel文件",".xlsx")])
+                if len(fname) == 0:
+                   self.printInfo('故障汇总信息未保存')
+                   return
+                else:
+                    if not '.xlsx' in fname:
+                        fname = fname + '.xlsx'
+                    operate.saveWarnBase(fname)
+                    style.setWarnSheetStyle(fname)
+                    # self.printInfo('故障汇总信息已保存到：' + fname)
                     os.popen(fname)
         except Exception as e:
             self.showError("异常信息",e)      
